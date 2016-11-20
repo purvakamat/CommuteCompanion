@@ -45,6 +45,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private static final int PERMISSION_REQUEST_CODE = 1;
     private LatLng mStartMarker;
     private LatLng mDestMarker;
+    private Marker mSMarker;
+    private Marker mDMarker;
     private List<Polyline> mPaths;
 
     @Override
@@ -126,10 +128,19 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 LatLng myPosition = new LatLng(latitude, longitude);
                 mStartMarker = myPosition;
 
-                mMap.addMarker(new MarkerOptions().position(myPosition).title("Start"));
+                mSMarker = mMap.addMarker(new MarkerOptions().position(myPosition).title("Start"));
                 mMap.moveCamera(CameraUpdateFactory.newLatLng(myPosition));
             }
         }
+    }
+
+
+    private void removePreviousPaths(){
+        for(Polyline p: mPaths)
+            p.remove();
+        mPaths.clear();
+        mDMarker = null;
+        mMap.clear();
     }
 
     @Override
@@ -140,6 +151,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                         keyEvent.getKeyCode() == KeyEvent.KEYCODE_ENTER) {
             if (!keyEvent.isShiftPressed()) {
                 // the user is done typing, search for the location.
+
+
                 EditText dest = (EditText) textView;
                 Intent i = new Intent(this, GoogleMapClient.class);
                 i.putExtra(Constants.INTENT_TYPE,IntentType.DESTINATION_LOCATION.ordinal());
@@ -182,7 +195,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
             if (resultCode == Constants.SUCCESS_RESULT) {
                 if (location != null) {
-                    mMap.addMarker(new MarkerOptions().position(location).title("Destination"));
+                    mDMarker = mMap.addMarker(new MarkerOptions().position(location).title("Destination"));
                     mDestMarker = location;
                     adjustMap();
                 }
@@ -214,6 +227,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                         mPaths.add(polyline);
                     }
                 }
+                System.out.println(count);
             }
         }
     }
