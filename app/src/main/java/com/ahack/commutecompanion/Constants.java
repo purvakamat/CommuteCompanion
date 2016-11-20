@@ -17,4 +17,6 @@ public final class Constants {
     public static String INTENT_TYPE = "INTENT_TYPE";
     public static String START_LOCATION = "START_LOCATION";
     public static String DEST_LOCATION = "DEST_LOCATION";
+    public static String LOCATION = "LOCATION";
+    public static String PATH_COUNT = "PATH_COUNT";
 }

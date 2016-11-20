@@ -6,8 +6,13 @@ import android.location.Address;
 import android.location.Geocoder;
 import android.os.Bundle;
 import android.os.Parcelable;
+import android.provider.Settings;
 import android.support.v4.os.ResultReceiver;
 
+import com.ahack.commutecompanion.GMapResponse.Leg;
+import com.ahack.commutecompanion.GMapResponse.ParseResponse;
+import com.ahack.commutecompanion.GMapResponse.Route;
+import com.ahack.commutecompanion.GMapResponse.Step;
 import com.google.android.gms.maps.model.LatLng;
 
 import org.w3c.dom.Document;
@@ -39,7 +44,7 @@ public class GoogleMapClient extends IntentService {
             switch (intentType) {
                 case DESTINATION_LOCATION:
                     Geocoder geocoder = new Geocoder(this);
-                    String location = intent.getExtras().getString("location");
+                    String location = intent.getExtras().getString(Constants.LOCATION);
                     List<Address> addresses;
                     addresses = geocoder.getFromLocationName(location, 1);
                     if(addresses.size() > 0) {
@@ -53,14 +58,27 @@ public class GoogleMapClient extends IntentService {
                 case ROUTES:
                     LatLng startLoc = intent.getParcelableExtra(Constants.START_LOCATION);
                     LatLng destLoc = intent.getParcelableExtra(Constants.DEST_LOCATION);
-                    GMapV2Direction md = new GMapV2Direction();
-                    Document doc = md.getDocument(startLoc, destLoc, GMapV2Direction.MODE_WALKING);
-                    ArrayList<LatLng> directionPoint = md.getDirection(doc);
-                    deliverResultToReceiver(Constants.SUCCESS_RESULT, directionPoint);
+                    ParseResponse response = new ParseResponse();
+                    String jsonResponse = response.convertStreamToString(response.fetch(startLoc, destLoc,ParseResponse.MODE_WALKING));
+                    System.out.println(jsonResponse);
+                    List<Route> directionPoint =  response.parse(jsonResponse);
+                    List<ArrayList<LatLng>> routes = new ArrayList<ArrayList<LatLng>>();
+                    for(Route r: directionPoint){
+                        ArrayList<LatLng> route = new ArrayList<LatLng>();
+                        for(Leg l:r.getLegs()){
+                            for(Step s: l.getSteps()){
+                                route.addAll(s.getPoints());
+                            }
+                        }
+                        routes.add(route);
+                    }
+                    deliverResultToReceiver(Constants.SUCCESS_RESULT, routes);
                     break;
             }
         } catch (IOException e) {
             //deliverResultToReceiver(Constants.FAILURE_RESULT, null);
+            e.printStackTrace();
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -71,9 +89,12 @@ public class GoogleMapClient extends IntentService {
         mReceiver.send(resultCode, bundle);
     }
 
-    private void deliverResultToReceiver(int resultCode, ArrayList<LatLng> directionPoints) {
+    private void deliverResultToReceiver(int resultCode, List<ArrayList<LatLng>> routes) {
         Bundle bundle = new Bundle();
-        bundle.putParcelableArrayList(Constants.RESULT_DATA_KEY, directionPoints);
+        bundle.putInt(Constants.PATH_COUNT, routes.size());
+        for(int i = 0; i<routes.size(); i++){
+            bundle.putParcelableArrayList(String.valueOf(i), routes.get(i));
+        }
         mReceiver.send(resultCode, bundle);
     }
 }

@@ -144,7 +144,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 Intent i = new Intent(this, GoogleMapClient.class);
                 i.putExtra(Constants.INTENT_TYPE,IntentType.DESTINATION_LOCATION.ordinal());
                 i.putExtra(Constants.RECEIVER, mResultReceiver);
-                i.putExtra("location", dest.getText().toString());
+                i.putExtra(Constants.LOCATION, dest.getText().toString());
                 startService(i);
                 return true; // consume
             }
@@ -198,18 +198,21 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         @Override
         protected void onReceiveResult(int resultCode, Bundle resultData) {
-            ArrayList<LatLng> path = resultData.getParcelableArrayList(Constants.RESULT_DATA_KEY);
 
             if (resultCode == Constants.SUCCESS_RESULT) {
-                if (path != null) {
-                    PolylineOptions rectLine = new PolylineOptions().width(10).color(
-                            Color.RED);
+                int count = resultData.getInt(Constants.PATH_COUNT);
+                if (count>0) {
+                    for(int i=0; i<count; i++){
+                        ArrayList<LatLng> path = resultData.getParcelableArrayList(String.valueOf(i));
 
-                    for (int i = 0; i < path.size(); i++) {
-                        rectLine.add(path.get(i));
+                        PolylineOptions rectLine = new PolylineOptions().width(10).color(Color.RED);
+
+                        for (int j = 0; j < path.size(); j++) {
+                            rectLine.add(path.get(j));
+                        }
+                        Polyline polyline = mMap.addPolyline(rectLine);
+                        mPaths.add(polyline);
                     }
-                    Polyline polyline = mMap.addPolyline(rectLine);
-                    mPaths.add(polyline);
                 }
             }
         }
