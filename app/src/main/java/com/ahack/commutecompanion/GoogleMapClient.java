@@ -5,11 +5,15 @@ import android.content.Intent;
 import android.location.Address;
 import android.location.Geocoder;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.support.v4.os.ResultReceiver;
 
 import com.google.android.gms.maps.model.LatLng;
 
+import org.w3c.dom.Document;
+
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -28,11 +32,12 @@ public class GoogleMapClient extends IntentService {
     protected void onHandleIntent(Intent intent) {
         try {
             System.out.println("intent started");
-            IntentType intentType = IntentType.fromOrdinal(intent.getIntExtra(Constants.INTENT_TYPE,0));
+            int iType = intent.getIntExtra(Constants.INTENT_TYPE,1);
+            IntentType intentType = IntentType.fromOrdinal(iType);
+            mReceiver = intent.getParcelableExtra(Constants.RECEIVER);
 
             switch (intentType) {
                 case DESTINATION_LOCATION:
-                    mReceiver = intent.getParcelableExtra(Constants.RECEIVER);
                     Geocoder geocoder = new Geocoder(this);
                     String location = intent.getExtras().getString("location");
                     List<Address> addresses;
@@ -46,10 +51,16 @@ public class GoogleMapClient extends IntentService {
                     break;
 
                 case ROUTES:
+                    LatLng startLoc = intent.getParcelableExtra(Constants.START_LOCATION);
+                    LatLng destLoc = intent.getParcelableExtra(Constants.DEST_LOCATION);
+                    GMapV2Direction md = new GMapV2Direction();
+                    Document doc = md.getDocument(startLoc, destLoc, GMapV2Direction.MODE_WALKING);
+                    ArrayList<LatLng> directionPoint = md.getDirection(doc);
+                    deliverResultToReceiver(Constants.SUCCESS_RESULT, directionPoint);
                     break;
             }
         } catch (IOException e) {
-            deliverResultToReceiver(Constants.FAILURE_RESULT, null);
+            //deliverResultToReceiver(Constants.FAILURE_RESULT, null);
             e.printStackTrace();
         }
     }
@@ -57,6 +68,12 @@ public class GoogleMapClient extends IntentService {
     private void deliverResultToReceiver(int resultCode, LatLng dest) {
         Bundle bundle = new Bundle();
         bundle.putParcelable(Constants.RESULT_DATA_KEY, dest);
+        mReceiver.send(resultCode, bundle);
+    }
+
+    private void deliverResultToReceiver(int resultCode, ArrayList<LatLng> directionPoints) {
+        Bundle bundle = new Bundle();
+        bundle.putParcelableArrayList(Constants.RESULT_DATA_KEY, directionPoints);
         mReceiver.send(resultCode, bundle);
     }
 }

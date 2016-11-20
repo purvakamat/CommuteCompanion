@@ -1,7 +1,7 @@
 package com.ahack.commutecompanion;
 
 /**
- * Created by Nikita Rao on 11/20/2016.
+ * Created by Purva Kamat on 11/20/2016.
  */
 
 public enum IntentType {

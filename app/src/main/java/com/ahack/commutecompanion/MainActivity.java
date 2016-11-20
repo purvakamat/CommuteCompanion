@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationManager;
@@ -28,17 +29,23 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
 
 import java.util.ArrayList;
 import java.util.List;
+
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback, EditText.OnEditorActionListener {
 
     private GoogleMap mMap;
     private Context context;
     private AddressResultReceiver mResultReceiver;
+    private RoutesResultReceiver mRouteResultReceiver;
     private static final int PERMISSION_REQUEST_CODE = 1;
-    private List<LatLng> mMarkers;
+    private LatLng mStartMarker;
+    private LatLng mDestMarker;
+    private List<Polyline> mPaths;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,7 +57,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         EditText dest_text = (EditText) this.findViewById(R.id.dest_text);
         dest_text.setOnEditorActionListener(this);
         mResultReceiver = new AddressResultReceiver(new Handler());
-        mMarkers = new ArrayList<LatLng>();
+        mRouteResultReceiver = new RoutesResultReceiver(new Handler());
+        mPaths = new ArrayList<Polyline>();
     }
 
     @Override
@@ -116,7 +124,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 // Getting longitude of the current location
                 double longitude = location.getLongitude();
                 LatLng myPosition = new LatLng(latitude, longitude);
-                mMarkers.add(myPosition);
+                mStartMarker = myPosition;
 
                 mMap.addMarker(new MarkerOptions().position(myPosition).title("Start"));
                 mMap.moveCamera(CameraUpdateFactory.newLatLng(myPosition));
@@ -134,7 +142,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 // the user is done typing, search for the location.
                 EditText dest = (EditText) textView;
                 Intent i = new Intent(this, GoogleMapClient.class);
-                i.putExtra(Constants.INTENT_TYPE,IntentType.DESTINATION_LOCATION);
+                i.putExtra(Constants.INTENT_TYPE,IntentType.DESTINATION_LOCATION.ordinal());
                 i.putExtra(Constants.RECEIVER, mResultReceiver);
                 i.putExtra("location", dest.getText().toString());
                 startService(i);
@@ -146,15 +154,20 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private void adjustMap(){
         LatLngBounds.Builder b = new LatLngBounds.Builder();
-        for (LatLng m : mMarkers) {
-            b.include(m);
-        }
+        b.include(mStartMarker);
+        b.include(mDestMarker);
         LatLngBounds bounds = b.build();
         mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds,100));
+        plotPaths();
     }
 
     private void plotPaths(){
-
+        Intent i = new Intent(this, GoogleMapClient.class);
+        i.putExtra(Constants.INTENT_TYPE,IntentType.ROUTES.ordinal());
+        i.putExtra(Constants.RECEIVER, mRouteResultReceiver);
+        i.putExtra(Constants.START_LOCATION, mStartMarker);
+        i.putExtra(Constants.DEST_LOCATION, mDestMarker);
+        startService(i);
     }
 
     class AddressResultReceiver extends ResultReceiver {
@@ -170,8 +183,33 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             if (resultCode == Constants.SUCCESS_RESULT) {
                 if (location != null) {
                     mMap.addMarker(new MarkerOptions().position(location).title("Destination"));
-                    mMarkers.add(location);
+                    mDestMarker = location;
                     adjustMap();
+                }
+            }
+        }
+    }
+
+    class RoutesResultReceiver extends ResultReceiver {
+
+        public RoutesResultReceiver(Handler handler) {
+            super(handler);
+        }
+
+        @Override
+        protected void onReceiveResult(int resultCode, Bundle resultData) {
+            ArrayList<LatLng> path = resultData.getParcelableArrayList(Constants.RESULT_DATA_KEY);
+
+            if (resultCode == Constants.SUCCESS_RESULT) {
+                if (path != null) {
+                    PolylineOptions rectLine = new PolylineOptions().width(10).color(
+                            Color.RED);
+
+                    for (int i = 0; i < path.size(); i++) {
+                        rectLine.add(path.get(i));
+                    }
+                    Polyline polyline = mMap.addPolyline(rectLine);
+                    mPaths.add(polyline);
                 }
             }
         }

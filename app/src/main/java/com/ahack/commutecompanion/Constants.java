@@ -15,4 +15,6 @@ public final class Constants {
     public static final String LOCATION_DATA_EXTRA = PACKAGE_NAME +
             ".LOCATION_DATA_EXTRA";
     public static String INTENT_TYPE = "INTENT_TYPE";
+    public static String START_LOCATION = "START_LOCATION";
+    public static String DEST_LOCATION = "DEST_LOCATION";
 }
