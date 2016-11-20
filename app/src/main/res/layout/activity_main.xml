@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/activity_main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    tools:context="com.ahack.commutecompanion.MainActivity">
+
+    <EditText
+        android:id="@+id/dest_text"
+        android:layout_width="fill_parent"
+        android:layout_height="@dimen/dest_edit_height"
+        android:hint="@string/dest_hint"
+        android:background="@color/colorWhite"
+        android:inputType="textEmailAddress"
+        android:paddingLeft="10dp"/>
+
+    <fragment
+        android:id="@+id/map"
+        android:layout_below="@+id/dest_text"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:name="com.google.android.gms.maps.SupportMapFragment"/>
+
+</RelativeLayout>
